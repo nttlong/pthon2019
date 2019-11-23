@@ -5,4 +5,6 @@ The declassification of views in app admin
 
 from django.http import response, HttpResponse
 def index(request):
-    return  HttpResponse("OK")
+    x=1
+    print("OK")
+    return  HttpResponse("OK sddfsafd")

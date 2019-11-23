@@ -4,8 +4,9 @@ import os
 import sys
 sys.path.append(os.path.dirname(__file__))
 import redj
-redj.set_root_dir(os.path.dirname(os.path.dirname(__file__)))
-print(redj.get_root_dir())
+redj.set_root_dir(os.path.dirname(__file__))
+hrm_app = redj.get_app("hrm")
+print(hrm_app)
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dj_spa.settings')
     try:

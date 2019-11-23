@@ -1,0 +1,10 @@
+{
+  "hrm": {
+    "host": "",
+    "dir": "hrm",
+    "static": "hrm",
+    "view": {
+
+    }
+  }
+}
