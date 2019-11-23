@@ -5,13 +5,13 @@ This  module including:
 import os
 import json
 __root_dir__ = None
-__apps__ = None
-__apps_info__ = None
+__apps__ = None # dictionary of app info after read from file app.json
+__apps_info__ = None # the cache of application info after convert from _apps__ dict
 def set_root_dir(dir):
    """
    Set current directory (Absolute Path of working directory)
    Note: The param dir in this method will be use calculate absolute path from relative path.
-   Example: if you want to get absolute full file path of a file place in app host
+   Example: if you would like to get absolute full file path of a file place in app host
    :param dir:
    :return:
    """
@@ -32,6 +32,12 @@ class ApplicationInfo:
     def __init__(self,app_name,data):
         self.name = app_name
         self.__dict__ = data
+        self.__dict__.update({
+            "is_multi_tenancy":data.get("isMultiTenancy",False)
+        })
+        self.__dict__.update({
+            "name": app_name
+        })
 
 
 

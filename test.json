@@ -2,6 +2,7 @@
   //test
   "hrm": {
     "dir": "hrm-resource",//test
-    "static": "./static"
+    "static": "./static",
+    "isMultiTenancy": false
   }
 }
