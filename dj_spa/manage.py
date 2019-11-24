@@ -4,8 +4,9 @@ import os
 import sys
 sys.path.append(os.path.dirname(__file__))
 import redj
-redj.set_root_dir(os.path.dirname(__file__))
-hrm_app = redj.get_app("hrm")
+from quikcy_controller import apps
+apps.set_root_dir(os.path.dirname(__file__))
+hrm_app = apps.get_app_by_name("hrm")
 print(hrm_app)
 def main():
     os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'dj_spa.settings')

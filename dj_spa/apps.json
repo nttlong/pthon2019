@@ -1,10 +1,12 @@
 {
-  "sure-hrm": {
+  "py-hrm": {
     "host": "hrm",
     "dir": "hrm",
     "static": "hrm",
     "isMultiTenancy": true,
+    "apiPath": "api",
     "view": {
+      "code": "123-dd"
 
     }
   }

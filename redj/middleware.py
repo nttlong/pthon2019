@@ -1,59 +1,15 @@
 from django.http import HttpResponse
 from django.utils.deprecation import MiddlewareMixin
+from quikcy_controller import path_detector
 from threading import Lock
-__obj_lock__= 1
-__cache_handler__ = {}
+from quikcy_controller.apps import on_apps_config_change
 __lock__ = Lock()
-def detect_request(request_path):
-    """
-    Find app by request path
-    :param path:
-    :return:
-    """
-
-
-    from . import __apps_info__ as __apps__
-    import os
-    default_apps = [app for k,app in __apps__.items() if app.is_multi_tenancy==False and app.host == ""]
-    default_app = None
-    request_parts = [x for x in request_path.split('/') if x != ""]
-    """
-    check is existing app with host is empty (host at root)
-    """
-    if default_apps.__len__()>0:
-        default_app = default_apps[0]
-        if request_parts.__len__()==0: # request path is also root that means request match app
-            file_path = os.path.join(default_app.dir,"index.html")
-            return default_app ,"",file_path # return default app (app with host is emty),emptry tenancy and index.html path
-    """
-    Assume that request is call to app in the firts part of request
-    Exmaple: '/app-admin/test.html' propally get content of test.html from app-admin app
-    
-    """
-    if request_parts.__len__() ==0:
-        return  None,None,None
-    assume_app_name = request_parts[0]
-    single_apps = [app for k, app in __apps__.items() if app.is_multi_tenancy == False and app.host.lower() == assume_app_name.lower()]
-    if single_apps.__len__()>0:
-        copy_request_parts = request_parts.copy()
-        del copy_request_parts[0:1]
-        file_path = os.path.join(single_apps[0].dir,os.path.sep.join(copy_request_parts))
-        return  single_apps[0],None,file_path+".html"
-    if request_parts.__len__()>1:
-        assume_app_name = request_parts[1]
-        multi_tenancy_apps = [app for k,app in __apps__.items() if app.is_multi_tenancy ==True and app.host.lower()==assume_app_name.lower()]
-        if multi_tenancy_apps.__len__()>0:
-            copy_request_parts = request_parts.copy()
-            del copy_request_parts[0:2]
-            file_path = os.path.join(multi_tenancy_apps[0].dir, os.path.sep.join(copy_request_parts))
-            return multi_tenancy_apps[0],request_parts[0],file_path
-    if default_app!=None:
-        copy_request_parts = request_parts.copy()
-        file_path = os.path.join(default_app.dir, os.path.sep.join(copy_request_parts))+".html"
-        return default_app,None,file_path
-    return None, None, None
-
-
+__cache_handler__ = {}
+__obj_lock__ =1
+def __clear_cache_when_app_config_file_change__():
+    global __cache_handler__
+    __cache_handler__ = {}
+on_apps_config_change(__clear_cache_when_app_config_file_change__)
 class PreRequest:
     def __init__(self):
         self.rel_file_path = None
@@ -70,7 +26,7 @@ class DynamicMiddleware(MiddlewareMixin):
         if __cache_handler__.get(request.path) !=True:
             __lock__.acquire(__obj_lock__)
             try:
-                app,tenancy,rel_file_path = detect_request(request.path)
+                app,tenancy,rel_file_path = path_detector.do_detect(request.path)
                 if app != None:
                     pre_request = PreRequest()
                     pre_request.tenancy= tenancy
