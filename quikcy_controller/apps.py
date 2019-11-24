@@ -19,7 +19,7 @@ def set_root_dir(dir):
    :return:
    """
    global __root_dir__
-   __root_dir__ =  dir
+   __root_dir__ =  dir.replace('/',os.path.sep)
 def on_apps_config_change(handler):
     global __on_config_change__
     __on_config_change__.append(handler)

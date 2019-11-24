@@ -1,7 +1,7 @@
 {
   "py-hrm": {
     "host": "hrm",
-    "dir": "hrm",
+    "dir": "apps/hrm",
     "static": "hrm",
     "isMultiTenancy": true,
     "apiPath": "api",
@@ -9,5 +9,10 @@
       "code": "123-dd"
 
     }
+  },
+  "py-cms": {
+    "host": "",
+    "dir": "apps/cms",
+    "isMultiTenancy": false
   }
 }

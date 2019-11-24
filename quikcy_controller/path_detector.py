@@ -2,8 +2,8 @@ from django.http import HttpResponse
 from django.utils.deprecation import MiddlewareMixin
 from threading import Lock
 from .apps import on_apps_config_change
-
-
+from .apps import get_root_dir
+import os
 
  #install clear cache watcher
 __obj_lock__ = 1 #lock muti theads access floag
@@ -45,6 +45,11 @@ def do_detect(request_path):
     :param path:
     :return:
     """
+    extension_of_path = request_path.split(".")[-1]
+    has_extesion = False
+    if extension_of_path != request_path:
+        has_extesion = True
+        request_path = request_path[0:len(request_path) - len(extension_of_path)-1]
 
     from . apps import get_all_apps
     import os
@@ -52,6 +57,7 @@ def do_detect(request_path):
     default_apps = [app for k, app in __apps__.items() if app.is_multi_tenancy == False and app.host == ""]
     default_app = None
     request_parts = [x for x in request_path.split('/') if x != ""]
+
     """
     check is existing app with host is empty (host at root)
     """
@@ -59,14 +65,19 @@ def do_detect(request_path):
         default_app = default_apps[0]
         if request_parts.__len__() == 0:  # request path is also root that means request match app
             file_path = os.path.join(default_app.dir, "index.html")
-            return default_app, "", file_path  # return default app (app with host is emty),emptry tenancy and index.html path
+            full_file_path = os.path.join(get_root_dir(),file_path)
+            if not os.path.exists(full_file_path):
+                return None,None,None,None,None
+            return default_app, "", file_path,full_file_path, False  # return default app (app with host is emty),emptry tenancy and index.html path
+
     """
     Assume that request is call to app in the firts part of request
     Exmaple: '/app-admin/test.html' propally get content of test.html from app-admin app
 
     """
+    not_check_file_path =False
     if request_parts.__len__() == 0:
-        return None, None, None
+        return None, None, None, None
     assume_app_name = request_parts[0]
     single_apps = [app for k, app in __apps__.items() if
                    app.is_multi_tenancy == False and app.host.lower() == assume_app_name.lower()]
@@ -74,20 +85,52 @@ def do_detect(request_path):
         copy_request_parts = request_parts.copy()
         del copy_request_parts[0:1]
         file_path = os.path.join(single_apps[0].dir, os.path.sep.join(copy_request_parts))
-        return single_apps[0], None, file_path + ".html"
+        if has_extesion:
+            file_path += "."+extension_of_path
+        full_file_path = os.path.join(get_root_dir(), file_path)
+        if os.path.exists(full_file_path) or not_check_file_path:
+            return single_apps[0], None, file_path ,full_file_path,has_extesion
+        else:
+            return None,None,None,None,None
+
     if request_parts.__len__() > 1:
         assume_app_name = request_parts[1]
         multi_tenancy_apps = [app for k, app in __apps__.items() if
                               app.is_multi_tenancy == True and app.host.lower() == assume_app_name.lower()]
         if multi_tenancy_apps.__len__() > 0:
             copy_request_parts = request_parts.copy()
-            del copy_request_parts[0:2]
-            if copy_request_parts.__len__()==0:
-                copy_request_parts=["index.html"]
-            file_path = os.path.join(multi_tenancy_apps[0].dir, os.path.sep.join(copy_request_parts))
-            return multi_tenancy_apps[0], request_parts[0], file_path
+            if not has_extesion:
+                del copy_request_parts[0:2]
+                if copy_request_parts.__len__()==0:
+                    copy_request_parts=["index"]
+                file_path = os.path.join(multi_tenancy_apps[0].dir.replace('/',os.path.sep), os.path.sep.join(copy_request_parts))+".html"
+            else:
+                file_path = os.path.join(multi_tenancy_apps[0].dir.replace('/',os.path.sep), os.path.sep.join(copy_request_parts)) + "."+extension_of_path
+            full_file_path = os.path.join(get_root_dir(), file_path)
+            if os.path.exists(full_file_path) :
+                return multi_tenancy_apps[0], request_parts[0], file_path,full_file_path,False
+
+
+
     if default_app != None:
         copy_request_parts = request_parts.copy()
-        file_path = os.path.join(default_app.dir, os.path.sep.join(copy_request_parts)) + ".html"
-        return default_app, None, file_path
+        file_path = os.path.join(default_app.dir.replace('/',os.path.sep), os.path.sep.join(copy_request_parts))
+        if has_extesion:
+            file_path+= "."+extension_of_path
+        full_file_path = os.path.join(get_root_dir(), file_path)
+        if os.path.exists(full_file_path)  or not_check_file_path:
+            return default_app, None, file_path,full_file_path,has_extesion
+        else:
+            return None,None,None,None, None
     return None, None, None
+
+"""
+        file_path= os.path.sep.join(request_parts)
+        file_path_full =os.sep.join([get_root_dir(),default_app.dir.replace('/',os.path.sep),file_path])
+        if has_extesion:
+            file_path_full+="."+extension_of_path;
+        else:
+            file_path_full+=".html"
+        if os.path.exists(file_path_full):
+            return default_app,"",file_path,file_path_full,has_extesion
+"""
