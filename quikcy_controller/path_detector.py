@@ -4,7 +4,7 @@ from threading import Lock
 from .apps import on_apps_config_change
 from .apps import get_root_dir
 import os
-
+from .template_info import TemplateInfo
  #install clear cache watcher
 __obj_lock__ = 1 #lock muti theads access floag
 __cache_handler__ = {} #cache handler path
@@ -67,8 +67,16 @@ def do_detect(request_path):
             file_path = os.path.join(default_app.dir, "index.html")
             full_file_path = os.path.join(get_root_dir(),file_path)
             if not os.path.exists(full_file_path):
-                return None,None,None,None,None
-            return default_app, "", file_path,full_file_path, False  # return default app (app with host is emty),emptry tenancy and index.html path
+                return None
+            return TemplateInfo(
+                app= default_app,
+                tenancy=None,
+                rel_file_path=file_path,
+                abs_file_path= full_file_path,
+                is_static= False
+
+            )
+            # return default_app, "", file_path,full_file_path, False  # return default app (app with host is emty),emptry tenancy and index.html path
 
     """
     Assume that request is call to app in the firts part of request
@@ -77,7 +85,7 @@ def do_detect(request_path):
     """
     not_check_file_path =False
     if request_parts.__len__() == 0:
-        return None, None, None, None
+        return None
     assume_app_name = request_parts[0]
     single_apps = [app for k, app in __apps__.items() if
                    app.is_multi_tenancy == False and app.host.lower() == assume_app_name.lower()]
@@ -89,9 +97,17 @@ def do_detect(request_path):
             file_path += "."+extension_of_path
         full_file_path = os.path.join(get_root_dir(), file_path)
         if os.path.exists(full_file_path) or not_check_file_path:
-            return single_apps[0], None, file_path ,full_file_path,has_extesion
+            return TemplateInfo(
+                app= single_apps[0],
+                tenancy= None,
+                rel_file_path= file_path,
+                abs_file_path= full_file_path,
+                is_static=has_extesion
+
+            )
+            # return single_apps[0], None, file_path ,full_file_path,has_extesion
         else:
-            return None,None,None,None,None
+            return None
 
     if request_parts.__len__() > 1:
         assume_app_name = request_parts[1]
@@ -108,7 +124,15 @@ def do_detect(request_path):
                 file_path = os.path.join(multi_tenancy_apps[0].dir.replace('/',os.path.sep), os.path.sep.join(copy_request_parts)) + "."+extension_of_path
             full_file_path = os.path.join(get_root_dir(), file_path)
             if os.path.exists(full_file_path) :
-                return multi_tenancy_apps[0], request_parts[0], file_path,full_file_path,False
+                return TemplateInfo(
+                    app= multi_tenancy_apps[0],
+                    tenancy= request_parts[0],
+                    rel_file_path=file_path,
+                    abs_file_path=full_file_path,
+                    is_static= False
+
+                )
+                # return multi_tenancy_apps[0], request_parts[0], file_path,full_file_path,False
 
 
 
@@ -118,11 +142,27 @@ def do_detect(request_path):
         if has_extesion:
             file_path+= "."+extension_of_path
         full_file_path = os.path.join(get_root_dir(), file_path)
-        if os.path.exists(full_file_path)  or not_check_file_path:
-            return default_app, None, file_path,full_file_path,has_extesion
+        if os.path.exists(full_file_path+".html"):
+            return TemplateInfo(
+                app= default_app,
+                tenancy= None,
+                rel_file_path=file_path+".html",
+                abs_file_path=full_file_path+".html",
+                is_static= has_extesion
+            )
+            # return default_app, None, file_path,full_file_path,has_extesion
+        elif not has_extesion and os.path.exists(os.path.join(full_file_path,"index")+".html"):
+            return TemplateInfo(
+                app=default_app,
+                tenancy=None,
+                rel_file_path=os.path.join(file_path,"index")+".html",
+                abs_file_path=os.path.join(full_file_path,"index")+".html",
+                is_static=False
+            )
+
         else:
-            return None,None,None,None, None
-    return None, None, None
+            return None
+    return None
 
 """
         file_path= os.path.sep.join(request_parts)
