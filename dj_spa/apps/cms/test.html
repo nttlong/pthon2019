@@ -5,6 +5,10 @@
     <title>Title</title>
 </head>
 <body>
-dadas dasda sdsad sad asda
+<ul>
+% for a in ("one", "two", "three"):
+    <li>Item ${loop.index}: ${a}</li>
+% endfor
+</ul>
 </body>
 </html>
